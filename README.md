@@ -4,13 +4,13 @@ A production-ready ASP.NET Core (.NET 8) back-end-for-front-end that plans fan-o
 
 ## Contents
 
-- `src/BraessAware.Bff` – ASP.NET Core BFF, planner library, and metrics wiring
-- `samples/Downstreams/*Service` – minimal APIs representing primary/alternate backends
-- `tests/BraessAware.Bff.Tests` – unit tests for the planner, hysteresis, and stats store
-- `tests/BraessAware.Bff.Integration` – Testcontainers-based integration suite validating mandatory nodes and latency improvements
-- `load/` – k6 load script for comparing planner-off vs planner-on
-- `deploy/` – Prometheus + Grafana deployment assets and dashboards
-- `.github/workflows` – CI and benchmark automation
+- `src/BraessAware.Bff` – ASP.NET Core BFF, planner library, and metrics wiring  
+- `samples/Downstreams/*Service` – minimal APIs representing primary/alternate backends  
+- `tests/BraessAware.Bff.Tests` – unit tests for the planner, hysteresis, and stats store  
+- `tests/BraessAware.Bff.Integration` – Testcontainers-based integration suite validating mandatory nodes and latency improvements  
+- `load/` – k6 load script for comparing planner-off vs planner-on  
+- `deploy/` – Prometheus + Grafana deployment assets and dashboards  
+- `.github/workflows` – CI and benchmark automation  
 
 ## Getting started
 
@@ -46,6 +46,18 @@ A production-ready ASP.NET Core (.NET 8) back-end-for-front-end that plans fan-o
    ```
    Responses include the JSON payload and an `x-braess-degraded` header listing nodes currently detoured to their alternate.
 
+---
+
+## Background: Braess’s Paradox
+
+Braess’s paradox describes a counterintuitive situation where adding a faster path to a network can **increase overall congestion and latency**, because individual nodes optimize for their own routes instead of the system’s total cost.
+
+In distributed systems, the same effect occurs when all traffic is routed to the seemingly fastest downstream. As load concentrates, latency spikes and tail percentiles worsen.  
+
+The **Braess-aware planner** counteracts this by deliberately routing a bounded portion of requests to alternate nodes with slightly higher base latency. By distributing pressure more evenly, the system improves **cluster-level p95 and p99 latency** and keeps the `/api/dashboard` endpoint within its SLO.
+
+---
+
 ## Planner configuration
 
 `appsettings.json` contains a `BraessPlanner` section describing each fan-out node (primary, alternate, mandatory flag, detour cap). Environment variable `BRAESS_ENABLED` toggles the planner globally, while individual routes can be enabled/disabled via configuration.
@@ -72,7 +84,7 @@ DOTNET_ROLL_FORWARD=LatestMajor dotnet test BraessAware.Bff.sln --logger "trx;Lo
 
 Integration tests run WireMock containers to emulate downstream primaries/alternates and verify two key behaviours:
 
-1. Mandatory nodes propagate failures if both primary/alternate are unhealthy.
+1. Mandatory nodes propagate failures if both primary/alternate are unhealthy.  
 2. Planner-enabled runs reduce observed p95 latency compared to planner-off.
 
 Test results land in `tests/results/` for CI upload.
@@ -92,14 +104,14 @@ Grafana (http://localhost:3000) ships with the dashboard pre-provisioned (admin/
 
 ## SLO tuning tips
 
-- Adjust `PlannerPolicyOptions.DegradedP95Threshold` to match downstream SLOs.
-- Increase `MaxDetourShare` cautiously (default 20%) to limit Braess-induced overload on alternates.
+- Adjust `PlannerPolicyOptions.DegradedP95Threshold` to match downstream SLOs.  
+- Increase `MaxDetourShare` cautiously (default 20%) to limit Braess-induced overload on alternates.  
 - Use the `braess` JSON envelope + header to audit which nodes detour most frequently.
 
 ## Load comparison workflow
 
-1. Run downstreams with exaggerated primary delay (e.g., `PRIMARY_DELAY_MS=450`).
-2. Execute the load script with planner off/on, capture CSV outputs.
+1. Run downstreams with exaggerated primary delay (e.g., `PRIMARY_DELAY_MS=450`).  
+2. Execute the load script with planner off/on, capture CSV outputs.  
 3. Plot the resulting p95 columns – you should observe a 30–40% improvement once the planner reroutes to alternates.
 
 ## License
