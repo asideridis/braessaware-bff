@@ -1,0 +1,36 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch:
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gnupg software-properties-common
+          curl -s https://repo.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://repo.k6.io/apt stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+      - name: Publish BFF
+        run: dotnet publish src/BraessAware.Bff/BraessAware.Bff/BraessAware.Bff.csproj -c Release -o publish
+      - name: Run BFF
+        run: dotnet BraessAware.Bff.dll &
+        working-directory: publish
+      - name: Wait for BFF
+        run: sleep 5
+      - name: Planner off benchmark
+        run: |
+          mkdir -p tests/results
+          BRAESS_ENABLED=false k6 run --out csv=tests/results/bench-off.csv load/dashboard.js
+      - name: Planner on benchmark
+        run: BRAESS_ENABLED=true k6 run --out csv=tests/results/bench-on.csv load/dashboard.js
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: tests/results

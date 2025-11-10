@@ -1,0 +1,6 @@
+@BraessAware.Bff_HostAddress = http://localhost:5198
+
+GET {{BraessAware.Bff_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,34 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Planner Cost",
+      "targets": [
+        {
+          "expr": "braess_bff_endpoint_cost_current",
+          "legendFormat": "current"
+        },
+        {
+          "expr": "braess_bff_endpoint_cost_target",
+          "legendFormat": "target"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Detours",
+      "targets": [
+        {
+          "expr": "increase(braess_bff_detours_applied_total[5m])",
+          "legendFormat": "{{node}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 38,
+  "title": "Braess Aware BFF",
+  "version": 1
+}
